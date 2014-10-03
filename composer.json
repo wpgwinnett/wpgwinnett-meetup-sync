@@ -1,0 +1,28 @@
+{
+    "name": "wpgwinnett/wpgwinnett-meetup-sync",
+    "description": "WP Gwinnett Meetup Sync",
+    "type": "wordpress-plugin",
+    "keywords": [
+        "wordpress",
+        "meetup",
+        "wpgwinnett"
+    ],
+    "homepage": "https://wpgwinnett.com",
+    "license": "GPL-2.0+",
+    "authors": [
+        {
+            "name": "Naomi C. Bush",
+            "email": "hello@naomicbush.com",
+            "homepage": "https://naomicbush.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/wpgwinnett/wpgwinnett-meetup-sync/issues",
+        "source": "https://github.com/wpgwinnett/wpgwinnett-meetup-sync"
+    },
+    "require": {
+        "composer/installers": "~1.0",
+        "php": ">=5.3"
+    }
+}
