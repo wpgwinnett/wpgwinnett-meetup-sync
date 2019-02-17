@@ -54,6 +54,30 @@ class WPGwinnett_Meetup_Sync {
 
 		$settings = get_option( 'meetup_group_settings' );
 
+        $response = wp_remote_get( 'http://api.meetup.com/2/events?key=' . MEETUP_API . '&sign=true&group_urlname=' . MEETUP_GROUP . '&page=2' );
+
+		$mfile = wp_remote_retrieve_body( $response );
+
+		$next_event = json_decode( preg_replace( '/[\x00-\x1F\x80-\xFF]/', '', $mfile ), true );
+
+		$settings[ 'next_event' ][ 0 ] = array(
+                                               'name'        => $next_event[ 'results' ][ 0 ][ 'name' ],
+                                               'description' => $next_event[ 'results' ][ 0 ][ 'description' ],
+                                               'link'        => $next_event[ 'results' ][ 0 ][ 'event_url' ],
+                                               'location'    => $next_event[ 'results' ][ 0 ][ 'venue' ][ 'name' ],
+                                               'time'        => $next_event[ 'results' ][ 0 ][ 'time' ],
+                                               );
+
+		$settings[ 'next_event' ][ 1 ] = array(
+                                               'name'        => $next_event[ 'results' ][ 1 ][ 'name' ],
+                                               'description' => $next_event[ 'results' ][ 1 ][ 'description' ],
+                                               'link'        => $next_event[ 'results' ][ 1 ][ 'event_url' ],
+                                               'location'    => $next_event[ 'results' ][ 1 ][ 'venue' ][ 'name' ],
+                                               'time'        => $next_event[ 'results' ][ 1 ][ 'time' ],
+                                               );
+
+		update_option( 'meetup_group_settings', $settings );
+
 		$next_user_meetup_time = gmdate( 'D, M j, Y g:i a', $settings[ 'next_event' ][ 0 ][ 'time' ] );
 
 		$meetup_address = $settings[ 'locations' ][ 'address' ];
@@ -83,6 +107,52 @@ class WPGwinnett_Meetup_Sync {
 	public function wpgwinnett_meetup_sponsors() {
 
 		$settings = get_option( 'meetup_group_settings' );
+
+		$response = wp_remote_get( 'http://api.meetup.com/2/groups?key=' . MEETUP_API . '&sign=true&group_urlname=' . MEETUP_GROUP . '&fields=other_services,sponsors,welcome_message' );
+
+		$mfile = wp_remote_retrieve_body( $response );
+
+		$group = json_decode( preg_replace( '/[\x00-\x1F\x80-\xFF]/', '', $mfile ), true );
+
+		if ( empty( $settings ) ) {
+
+			$settings = array(
+				'name'            => $group[ 'results' ][ 0 ][ 'name' ],
+				'organizer'       => $group[ 'results' ][ 0 ][ 'organizer' ][ 'name' ],
+				'meetup_url'      => $group[ 'results' ][ 0 ][ 'link' ],
+				'description'     => $group[ 'results' ][ 0 ][ 'description' ],
+				'id'              => $group[ 'results' ][ 0 ][ 'id' ],
+				'twitter'         => $group[ 'results' ][ 0 ][ 'other_services' ][ 'twitter' ][ 'identifier' ],
+				'welcome_message' => $group[ 'results' ][ 0 ][ 'welcome_message' ],
+			);
+
+		}
+		else {
+
+			$settings['name']            = $group[ 'results' ][ 0 ][ 'name' ];
+			$settings['organizer']       = $group[ 'results' ][ 0 ][ 'organizer' ][ 'name' ];
+			$settings['meetup_url']      = $group[ 'results' ][ 0 ][ 'link' ];
+			$settings['description']     = $group[ 'results' ][ 0 ][ 'description' ];
+			$settings['id']              = $group[ 'results' ][ 0 ][ 'id' ];
+			$settings['twitter']         = $group[ 'results' ][ 0 ][ 'other_services' ][ 'twitter' ][ 'identifier' ];
+			$settings['welcome_message'] = $group[ 'results' ][ 0 ][ 'welcome_message' ];
+		}
+
+		$settings['sponsors'] = array();
+
+		foreach ( $group[ 'results' ][ 0 ][ 'sponsors' ] as $sponsor ) {
+
+			$settings[ 'sponsors' ][] = array(
+				'name'        => $sponsor[ 'name' ],
+				'url'         => $sponsor[ 'url' ],
+				'logo'        => $sponsor[ 'image_url' ],
+				'description' => $sponsor[ 'details' ],
+				'provide'     => $sponsor[ 'info' ],
+			);
+
+		}
+
+		update_option( 'meetup_group_settings', $settings );
 
 		$sponsors = '';
 
@@ -175,7 +245,7 @@ class WPGwinnett_Meetup_Sync {
 
 		update_option( 'meetup_group_settings', $settings );
 
-	}
+	}/*
 
 // MEETUP.COM - PEOPLE
 //--------------------------------
