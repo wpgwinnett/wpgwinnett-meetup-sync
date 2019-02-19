@@ -33,7 +33,10 @@ class WPGwinnett_Meetup_Sync {
 	public function plugins_loaded() {
 	}
 
+
 	public function init() {
+		/* auto load your include files */
+		
 
 		add_shortcode( 'wpgwinnett_meetup_intro', array( $this, 'wpgwinnett_meetup_intro' ) );
 
@@ -42,6 +45,7 @@ class WPGwinnett_Meetup_Sync {
 		add_shortcode( 'wpgwinnett_meetup_sponsors', array( $this, 'wpgwinnett_meetup_sponsors' ) );
 
 	}
+
 
 	public function wpgwinnett_meetup_intro() {
 
@@ -53,7 +57,8 @@ class WPGwinnett_Meetup_Sync {
 	public function wpgwinnett_meetup_meetups() {
 
 		$settings = get_option( 'meetup_group_settings' );
-
+	
+		
         $response = wp_remote_get( 'http://api.meetup.com/2/events?key=' . MEETUP_API . '&sign=true&group_urlname=' . MEETUP_GROUP . '&page=2' );
 
 		$mfile = wp_remote_retrieve_body( $response );
@@ -501,7 +506,29 @@ class WPGwinnett_Meetup_Sync {
 	}*/
 
 }
+spl_autoload_register( 'sync_autoloader' ) ;
 
 $wpgwinnett_meetup_sync = new WPGwinnett_Meetup_Sync();
 
 $wpgwinnett_meetup_sync->run();
+
+new WPGwinnett_Meetup_Post();
+
+// this function auto loads include files 
+// name the class the same name as the file
+
+function sync_autoloader( $class_name ) {
+
+	// base directory for the namespace prefix
+	$base_dir = __DIR__ . '\\includes\\';
+
+	$file = $base_dir . str_replace('\\', '/', $class_name) . '.php';
+
+// if the file exists, require it
+
+	if (file_exists($file)) {
+		
+		require_once $file;
+	}
+
+}
