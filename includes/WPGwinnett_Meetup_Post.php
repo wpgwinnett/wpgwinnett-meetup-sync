@@ -5,34 +5,58 @@
 class WPGwinnett_Meetup_Post{
 
     public function __construct() {
-
-// we are using updated_post_meta instead of save_post because save_post does not return the meta data.  
-
-      add_action('updated_post_meta', array( $this,'change_meetup_posting'), 10, 4); 
+      add_action('save_post', array( $this,'change_meetup_posting'), 99, 3); 
 	}
 
 
 
-    function change_meetup_posting($meta_id, $post_id, $meta_key='', $meta_value=''){
-        
-        $post = get_post($post_id);
+    function change_meetup_posting($post_id, $post, $update ) {
+    
+          //check to see if we have the correct post type, status, permissions and we 
+          // are not doing an auto save, a bulk edit or a cron
+
+          if ( $post->post_type != 'tribe_events')
+              return;
       
-        //ensure the post is one of our events and ensure that the save meta data is finished doing its work
+          if ($post->post_status != "publish")
+          return;
 
-        if ( ($post->post_type == 'tribe_events') && ($meta_key=='_edit_lock')){
-
-            $group = 'MEETUP_GROUP';
-            // for testing 
-            if (defined ( 'MEETUP_API_TESTING'))
-                    $group = 'MEETUP_API_TESTING';
+          if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ( defined( 'DOING_AJAX') && DOING_AJAX ) || isset( $_REQUEST['bulk_edit'] ) ) {
+            return;
+          }
+          if ( isset( $post->post_type ) && 'revision' == $post->post_type ) 
+              return;
         
+      
+          if ( defined( 'DOING_CRON' ) && DOING_CRON )
+            return;
+
+          if ( !current_user_can( 'publish_tribe_events', $post_id ) ) 
+            return;
+        
+
+    
+          $group = 'MEETUP_GROUP';
+          // for testing 
+          if (defined ( 'MEETUP_API_TESTING'))
+                  $group = 'MEETUP_API_TESTING';
+      
            
           // error_log(print_r($post,true));
 
+           // get the event info from the post ID
+			      $eventStreet=  tribe_get_address( $post_id );
+            $eventCity =  tribe_get_city($post_id);
+            $eventState = tribe_get_state($post_id);
+            $eventZip = tribe_get_zip($post_id);
+           
+			
+		
+           
+		 
             // get the event info from the post ID
             $eventInfo = tribe_get_event_meta($post_id);
-           
-           
+		      //	error_log('event info ' . print_r($eventInfo, true));
            // get the organizers names
             $organizerName = '';
             $numItems = count($eventInfo['_EventOrganizerID']);
@@ -71,30 +95,22 @@ class WPGwinnett_Meetup_Post{
            
             $fullLocation = $eventStreet . ' ' . $eventCity . ' ' . $eventState . ' ' . $eventZip;
            
-            // check if its a new post or an update
-            // we use the time stamp beause our hook doesn't have an 'update' boolean field like the save_post hook
+                   
        
-              if ($post->post_date   === $post->post_modified ){
-                   $url = 'https://api.meetup.com/2/events?key=' . MEETUP_API . '&group_urlname=' . $group . '/events'; 
-                   $url .= '&description='. $post->post_content . '&event_hosts='.$organizerName . '&name=' .$post->post_title. '&how_to_find_us=' .$fullLocation. '&duration=' .$eventInfo['_EventDuration'][0] . '&time=' .  $time_in_ms .', ' . $endTime_in_ms ;
-                   $response = wp_remote_post($url);
-              }
-                   else {
+              
+            $url = 'https://api.meetup.com/2/events?key=' . MEETUP_API . '&group_urlname=' . $group . '/events'; 
+            $url .= '&description='. $post->post_content . '&event_hosts='.$organizerName . '&name=' .$post->post_title. '&how_to_find_us=' .$fullLocation. '&duration=' .$eventInfo['_EventDuration'][0] . '&time=' .  $time_in_ms .', ' . $endTime_in_ms ;
+          // error_log('url is ' . $url);
 
-
-                    $url .= '&description='. $post->post_content . '&event_hosts='.$organizerName . '&name=' .$post->post_title. '&how_to_find_us=' .$fullLocation. '&duration=' .$eventInfo['_EventDuration'][0] . '&time=' .  $time_in_ms .', ' . $endTime_in_ms ;
-                  // to be implemented
-                     return;
-
-                   }
-   
+				     $response = wp_remote_post($url);
+             
            
             error_log('response is '. print_r($response, TRUE));
 
 
             
             
-        }
+         
     }
 
 }
